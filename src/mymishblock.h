@@ -1318,11 +1318,13 @@ typedef struct {
 	uint32_t data[0x20];
 } __attribute__((__packed__)) UDIFChecksum;
 
+/*
 // Where each  BLXKRunEntry is defined as follows:
+
 typedef struct {
         uint32_t EntryType;         // Compression type used or entry type (see next table)
         uint32_t Comment;           // "+beg" or "+end", if EntryType is comment (0x7FFFFFFE). Else reserved.
-        uint64_t SectorNumber;      // Start sector of this chunk
+        uint64_t SectorNumber;     // Start sector of this chunk
         uint64_t SectorCount;       // Number of sectors in this chunk
         uint64_t CompressedOffset;  // Start of chunk in data fork
         uint64_t CompressedLength;  // Count of bytes of chunk, in data fork
@@ -1350,4 +1352,38 @@ typedef struct {
         uint32_t NumberOfBlockChunks; 
         BLKXChunkEntry runs[0];
 } __attribute__((__packed__)) BLKXTable;
+*/
+
+typedef struct {
+	uint32_t type;
+	uint32_t reserved;
+	uint64_t sectorStart;
+	uint64_t sectorCount;
+	uint64_t compOffset;
+	uint64_t compLength;
+} __attribute__((__packed__)) BLKXRun;
+
+typedef struct {
+	uint32_t fUDIFBlocksSignature;
+	uint32_t infoVersion;
+	uint64_t firstSectorNumber;
+	uint64_t sectorCount;
+	
+	uint64_t dataStart;
+	uint32_t decompressBufferRequested;
+	uint32_t blocksDescriptor;
+	
+	uint32_t reserved1;
+	uint32_t reserved2;
+	uint32_t reserved3;
+	uint32_t reserved4;
+	uint32_t reserved5;
+	uint32_t reserved6;
+	
+	UDIFChecksum checksum;
+	
+	uint32_t blocksRunCount;
+	BLKXRun runs[0];
+} __attribute__((__packed__)) BLKXTable;
+
 

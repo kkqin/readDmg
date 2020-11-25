@@ -6,4 +6,5 @@ target_include_directories(dmgPeek PUBLIC ../dep/b64.c)
 
 target_link_libraries(dmgPeek PUBLIC
 	b64c
+	zlib
 )

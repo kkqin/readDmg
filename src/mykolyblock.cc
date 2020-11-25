@@ -7,6 +7,7 @@
 #include "mymishblock.h"
 #include "mykolyblock.h"
 #include "b64.h"
+#include "parse_zlib_data.h"
 
 typedef struct {
         char     Signature[4];          // Magic ('koly')
@@ -62,24 +63,24 @@ static void trim_space(char** location) {
 
 void mish_block(unsigned char* mish) {
 	BLKXTable* mishblock = (BLKXTable*)mish;
-	std::cout <<"Signature:" << ntohl(mishblock->Signature) << std::endl;
-	std::cout <<"Version:" << ntohl(mishblock->Version) << std::endl;
-	std::cout <<"SectorNumber:" << swapByteOrder(mishblock->SectorNumber) << std::endl;
-	std::cout <<"SectorCount:" << swapByteOrder(mishblock->SectorCount) << std::endl;
-	std::cout <<"DataOffset:" << swapByteOrder(mishblock->DataOffset) << std::endl;
-	std::cout <<"BuffersNeeded:" << ntohl(mishblock->BuffersNeeded) << std::endl;
-	std::cout <<"BlockDescriptors:" << ntohl(mishblock->BlockDescriptors) << std::endl;
-	std::cout <<"NumberOfBlockChunks:" << ntohl(mishblock->NumberOfBlockChunks) << std::endl;
+	std::cout <<"fUDIFBlocksSignature:" << ntohl(mishblock->fUDIFBlocksSignature) << std::endl;
+	std::cout <<"infoVersion:" << ntohl(mishblock->infoVersion) << std::endl;
+	std::cout <<"firstSectorNumber:" << swapByteOrder(mishblock->firstSectorNumber) << std::endl;
+	std::cout <<"sectorCount:" << swapByteOrder(mishblock->sectorCount) << std::endl;
+	std::cout <<"dataStart:" << swapByteOrder(mishblock->dataStart) << std::endl;
+	std::cout <<"decompressBufferRequested:" << ntohl(mishblock->decompressBufferRequested) << std::endl;
+	std::cout <<"blocksDescriptor:" << ntohl(mishblock->blocksDescriptor) << std::endl;
+	std::cout <<"blocksRunCount:" << ntohl(mishblock->blocksRunCount) << std::endl;
 
-	std::cout << "===================" << std::endl;
+	std::cout << "===================BLKXRun++++++++++++++++" << std::endl;
 
-	BLKXChunkEntry* entry = (BLKXChunkEntry*)mishblock->runs;
-	std::cout <<"EntryType:" << ntohl(entry->EntryType) << std::endl;
-	std::cout <<"Comment:" << ntohl(entry->Comment) << std::endl;
-	std::cout <<"SectorNumber:" << swapByteOrder(entry->SectorNumber) << std::endl;
-	std::cout <<"SectorCount:" << swapByteOrder(entry->SectorCount) << std::endl;
-	std::cout <<"CompressedOffset:" << swapByteOrder(entry->CompressedOffset) << std::endl;
-	std::cout <<"CompressedLength:" << swapByteOrder(entry->CompressedLength) << std::endl;
+	BLKXRun* entry = (BLKXRun*)mishblock->runs;
+	std::cout <<"type:" << ntohl(entry->type) << std::endl;
+	std::cout <<"reserved:" << ntohl(entry->reserved) << std::endl;
+	std::cout <<"sectorStart:" << swapByteOrder(entry->sectorStart) << std::endl;
+	std::cout <<"sectorCount:" << swapByteOrder(entry->sectorCount) << std::endl;
+	std::cout <<"compOffset:" << swapByteOrder(entry->compOffset) << std::endl;
+	std::cout <<"compLength:" << swapByteOrder(entry->compLength) << std::endl;
 }
 
 static char ascii_to_base(char str) 
@@ -95,55 +96,6 @@ static char ascii_to_base(char str)
 	} else {
 		return 63;
 	}
-}
-
-//解码实现函数
-static char *base_decode(char *src)
-{
-	int src_len=0;//源字符串的长度
-	int decode_len=0;//解码后的字符长度
-	char *decode=NULL;
-	char *encode=NULL;
-	int i=0;
-	int decode_i=0;
-
-	src_len=strlen(src);
-	printf("src_len is %d\n",src_len);
-	if((src[src_len-2]=='=')&&(src[src_len-1]=='='))
-	{
-		decode_len=src_len/4*3-2;
-	}else if((src[src_len-1]=='=') && (src[src_len-2]!='=')){
-		decode_len=src_len/4*3-1;
-	}else
-		decode_len=src_len/4*3;
-	printf("decode_len is %d\n",decode_len);
-	
-	encode = strdup(src);
-	decode=(char*)malloc(src_len+1);
-	bzero(decode,src_len+1);
-
-//以4个字符为一组解码，得到3个字节一组的源码
-	for(i=0;i<src_len;i+=4)
-	{
-		decode[decode_i]=(((ascii_to_base(encode[i])&0xff)<<2) | ((ascii_to_base(encode[i+1])&0xff)>>4));//计算第一个字节
-		if(src[i+2]=='=')
-		{
-			break;
-		}
-		decode[decode_i+1]=(((ascii_to_base(encode[i+1])&0xff)<<4) | ((ascii_to_base(encode[i+2])&0xff)>>2));//计算第二个字节
-		if(src[i+3]=='=')
-		{
-			break;
-		}
-		decode[decode_i+2]=(((ascii_to_base(encode[i+2])&0xff)<<6) | (ascii_to_base(encode[i+3])&0xff));//计算第三个字节
-		decode_i+=3;
-	}
-	if(encode)
-	{
-		free(encode);
-		encode=NULL;
-	}
-	return decode;
 }
 
 unsigned char* decodeBase64(char* toDecode, size_t* dataLength) {
@@ -248,6 +200,7 @@ char* prepare_decode(std::string xml_inside_data_file, size_t *filesize) {
 	rfile.seekg(0, std::ios_base::end);
 	*filesize =  rfile.tellg();
 	char* buf = new char[*filesize];
+	rfile.seekg(0);
 	rfile.read(buf, *filesize);
 	rfile.close();
 
@@ -256,11 +209,13 @@ char* prepare_decode(std::string xml_inside_data_file, size_t *filesize) {
 
 
 void open_and_decode_mish(std::string name) {
-	size_t filesize;
-	char* buf = prepare_decode(name, &filesize);
-	buf[filesize] = '\0';
-	unsigned char* res = decodeBase64(buf, &filesize);
-	//mish_block(res);
+	size_t fileSize;
+	char* buf = prepare_decode(name, &fileSize);
+	buf[fileSize] = '\0';
+	size_t length;
+	unsigned char* outDecode = b64_decode_ex(buf, fileSize, &length); //// 
+	//unsigned char* res = decodeBase64(buf, &filesize);
+	mish_block(outDecode);
 	delete [] buf;
 }
 
@@ -327,7 +282,7 @@ char* read_xml(char* xml, uint64_t* dataSize) {
 				char* tagBegin = curLoc;
 				curLoc = tagEnd + sizeof("</key>") - 1;
 
-				if(strncmp(tagBegin, "Data", strLen) == 0 && i == 4) {
+				if(strncmp(tagBegin, "Data", strLen) == 0 && i == 0) {
 					toReturn = getXMLData(&curLoc, dataSize);
 					return toReturn;
 				}
@@ -358,7 +313,6 @@ void outXML(std::ifstream& file, std::string file_dmg, uint64_t start_offset, ui
 	char* data = read_xml(buf, &dataSize);
 	size_t length;
 	unsigned char* outDecode = decodeBase64(data, &length); //base_decode(data);// 
-	//unsigned char* outDecode = base_decode(data); //// 
 	mish_block(outDecode);
 	//wfile.write(buf, size);
 }
@@ -404,7 +358,6 @@ int koly_block(std::string file_dmg) {
 		std::cout << "error" << std::endl;
 		return -1;
 	}
-	std::cout << rfile.is_open() << std::endl;
 	rfile.seekg(0, std::ios_base::end);
 	uint64_t filesize = rfile.tellg();
 	rfile.seekg(filesize - sizeof(UDIFResourceFile));
@@ -414,7 +367,9 @@ int koly_block(std::string file_dmg) {
 	UDIFResourceFile* kolyblock = (UDIFResourceFile*)_data;
 
 	assert(!strcmp(kolyblock->Signature, "koly"));
+	std::cout << "+++++++++++++++++++koly=====================" << std::endl;
 	show_kolyblock(kolyblock);
+	std::cout << "+++++++++++++++++++mish=====================" << std::endl;
 	outXML(rfile, file_dmg, swapByteOrder(kolyblock->XMLOffset), swapByteOrder(kolyblock->XMLLength));
 }
 
@@ -423,8 +378,9 @@ int koly_block(std::string file_dmg) {
 int main(int argc, char** argv) {
 	koly_block(argv[1]);
 
+	std::cout << "++++++++++++++++++++=====================" << std::endl;
 	//mish_block(mish);
-	//open_and_decode_mish(argv[1]);
+	//open_and_decode_mish(argv[2]);
 
 	return 0;
 }
