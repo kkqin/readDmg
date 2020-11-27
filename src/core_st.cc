@@ -113,12 +113,28 @@ unsigned char* decodeBase64(char* toDecode, size_t* dataLength) {
 	return decodeBuffer;
 }
 
-static unsigned char* getXMLData(char** location, size_t *dataLength) {
+void fill_mishblk(unsigned char* c, BLKXTable* m)
+{
+        memset(m, 0, sizeof(BLKXTable));
+        memcpy(m, c, 0xCC);
+
+        m->fUDIFBlocksSignature = convert_int(m->fUDIFBlocksSignature);
+        m->infoVersion = convert_int(m->infoVersion);
+        m->firstSectorNumber = convert_int64(m->firstSectorNumber);
+        m->sectorCount = convert_int64(m->sectorCount);
+        m->dataStart = convert_int64(m->dataStart);
+        m->decompressBufferRequested = convert_int(m->decompressBufferRequested);
+        m->blocksDescriptor = convert_int(m->blocksDescriptor);
+        //m->checksum = convert_m->checksum;
+        m->blocksRunCount = convert_int(m->blocksRunCount);
+}
+
+static BLKXTable* getXMLData(char** location, size_t *dataLength) {
 	char* curLoc;
 	char* tagEnd;
 	char* AAAAA;
 	size_t strLen;
-	unsigned char* toReturn;
+	unsigned char* decodeData;
 
 	curLoc = *location;
 
@@ -135,14 +151,19 @@ static unsigned char* getXMLData(char** location, size_t *dataLength) {
 	memcpy(AAAAA, curLoc, *dataLength); // raw AAAA 
 	AAAAA[*dataLength] = '\0';
 
- 	toReturn = decodeBase64(AAAAA, dataLength); 
+ 	decodeData = decodeBase64(AAAAA, dataLength); 
+	BLKXTable* mishblk = (BLKXTable*)malloc(sizeof(BLKXTable));
+	fill_mishblk(decodeData, mishblk);
+	mishblk->runs = (char*)malloc(sizeof(BLKXRun) * mishblk->blocksRunCount);
+	memcpy(mishblk->runs, decodeData + sizeof(BLKXTable) - sizeof(char*), sizeof(BLKXRun) * mishblk->blocksRunCount);
 
 	free(AAAAA);
+	free(decodeData);
 	curLoc = tagEnd + sizeof("</data>") - 1;
 
 	*location = curLoc;
 
-	return toReturn;
+	return mishblk;
 }
 
 void parse_xml(std::shared_ptr<PLIST_XML> xml, std::shared_ptr<DMG> dmg) {
@@ -189,7 +210,7 @@ void parse_xml(std::shared_ptr<PLIST_XML> xml, std::shared_ptr<DMG> dmg) {
 
 				if(strncmp(tagBegin, "Data", strLen) == 0) {
 					size_t dataSize;			
-					BLKXTable* mish = (BLKXTable*)getXMLData(&curLoc, &dataSize);
+					BLKXTable* mish = getXMLData(&curLoc, &dataSize);
 					dmg->blkx.push_back(mish);
 				}
 				else if(strncmp(tagBegin, "CFName", strLen) == 0) {

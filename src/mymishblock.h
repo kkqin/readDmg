@@ -36,7 +36,7 @@ typedef struct {
 	UDIFChecksum checksum;
 	
 	uint32_t blocksRunCount;
-	BLKXRun runs[0];
+	char* runs;
 } __attribute__((__packed__)) BLKXTable;
 
 

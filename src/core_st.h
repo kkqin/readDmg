@@ -17,6 +17,34 @@ inline unsigned long long swapByteOrder(unsigned long long ull)
     return ull;
 }
 
+inline int convert_int(int i)
+{
+        int o;
+        char *p_i = (char *) &i;
+        char *p_o = (char *) &o;
+        p_o[0] = p_i[3];
+        p_o[1] = p_i[2];
+        p_o[2] = p_i[1];
+        p_o[3] = p_i[0];
+        return o;
+}
+
+inline uint64_t convert_int64(uint64_t i)
+{
+        uint64_t o;
+        char *p_i = (char *) &i;
+        char *p_o = (char *) &o;
+        p_o[0] = p_i[7];
+        p_o[1] = p_i[6];
+        p_o[2] = p_i[5];
+        p_o[3] = p_i[4];
+        p_o[4] = p_i[3];
+        p_o[5] = p_i[2];
+        p_o[6] = p_i[1];
+        p_o[7] = p_i[0];
+        return o;
+}
+
 namespace core_ {
 
 typedef struct DMG {
