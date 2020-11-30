@@ -66,6 +66,7 @@ typedef struct DMG {
 	uint64_t forward_size;
 
 	DMG() : disk_size(0), forward_size(0) {}
+	void read_dmg(uint64_t offset, char* buf, size_t a_len);
 } DMG;
 
 typedef struct PLIST_XML {

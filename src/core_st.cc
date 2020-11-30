@@ -1,6 +1,7 @@
 #include "core_st.h"
 #include <iostream>
 #include <cstring>
+#include <cassert>
 
 namespace core_ {
 
@@ -242,6 +243,36 @@ void parse_xml(std::shared_ptr<PLIST_XML> xml, std::shared_ptr<DMG> dmg) {
 			trim_space(&curLoc);
 		}
 		curLoc = tagEnd + sizeof("</array>") - 1;
+	}
+}
+
+void DMG::read_dmg(uint64_t offset, char* buf, size_t a_len) {
+	if(offset > disk_size || a_len > disk_size)  
+		return;
+
+	auto iter = blkx_runs.lower_bound(offset);
+	if(iter == blkx_runs.end())
+		return;
+
+	uint64_t start_offset = iter->first; 
+	uint64_t end_offset = start_offset + a_len;
+	auto iter2 = blkx_runs.lower_bound(end_offset);
+	if(iter2 == blkx_runs.end())
+		return;
+
+	size_t size;
+	for(; iter != iter2; iter++) {
+		uint64_t offset = iter->first;
+		BLKXRun* run = iter->second;
+		size = convert_int64(run->sectorCount) * 512 ;
+		
+		// parse read
+
+
+		if(size <= a_len)
+			a_len -= size;
+		else 		
+			a_len = 0;
 	}
 }
 
