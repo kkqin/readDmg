@@ -1,4 +1,5 @@
 #include "core_st.h"
+#include <iostream>
 #include <cstring>
 
 namespace core_ {
@@ -166,6 +167,22 @@ static BLKXTable* getXMLData(char** location, size_t *dataLength) {
 	return mishblk;
 }
 
+void dispath(BLKXTable* mish, std::shared_ptr<DMG> dmg) {
+	unsigned int block_type;
+	uint64_t out_offs, out_size;
+	for(auto i = 0; i < mish->blocksRunCount; i++) {
+		BLKXRun* runs = (BLKXRun*)(mish->runs + sizeof(BLKXRun) * i);
+		block_type = convert_int(runs->type);
+		if(block_type == BT_TERM)
+			continue;	
+		out_offs = convert_int64(runs->sectorStart) * 512;
+		out_size = convert_int64(runs->sectorCount) * 512;
+		dmg->disk_size += out_size;
+		dmg->forward_size = dmg->disk_size - out_size;
+		dmg->blkx_runs[dmg->forward_size] = runs;
+	}
+}
+
 void parse_xml(std::shared_ptr<PLIST_XML> xml, std::shared_ptr<DMG> dmg) {
 	char* curLoc;
 	char* tagEnd;
@@ -211,6 +228,7 @@ void parse_xml(std::shared_ptr<PLIST_XML> xml, std::shared_ptr<DMG> dmg) {
 				if(strncmp(tagBegin, "Data", strLen) == 0) {
 					size_t dataSize;			
 					BLKXTable* mish = getXMLData(&curLoc, &dataSize);
+					dispath(mish, dmg);
 					dmg->blkx.push_back(mish);
 				}
 				else if(strncmp(tagBegin, "CFName", strLen) == 0) {

@@ -3,6 +3,18 @@
 #include <vector>
 #include <memory>
 #include <cstring>
+#include <map>
+
+#define BT_ADC   0x80000004
+#define BT_ZLIB  0x80000005
+#define BT_BZLIB 0x80000006
+
+#define BT_ZERO 0x00000000
+#define BT_RAW 0x00000001
+#define BT_IGNORE 0x00000002
+#define BT_COMMENT 0x7ffffffe
+#define BT_TERM 0xffffffff
+
 
 inline unsigned long long swapByteOrder(unsigned long long ull)
 {
@@ -49,6 +61,11 @@ namespace core_ {
 
 typedef struct DMG {
 	std::vector<BLKXTable*> blkx;
+	std::map<uint64_t, BLKXRun*> blkx_runs;
+	uint64_t disk_size;
+	uint64_t forward_size;
+
+	DMG() : disk_size(0), forward_size(0) {}
 } DMG;
 
 typedef struct PLIST_XML {

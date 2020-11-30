@@ -4,7 +4,6 @@
 #include <fstream>
 #include <cassert>
 #include <cstring>
-//#include "mymishblock.h"
 #include "mykolyblock.h"
 #include "b64.h"
 #include "parse_zlib_data.h"
@@ -45,32 +44,6 @@ void process_plist_xml(std::ifstream& file, uint64_t start_offset, uint64_t size
 	auto dmg = std::make_shared<core_::DMG>(); 
 	core_::parse_xml(xml, dmg);
 }
-
-/* void outXML(std::ifstream& file, std::string file_dmg, uint64_t start_offset, uint64_t size) {
-	if(!size) 
-		return ;
-	std::ofstream wfile;
-	wfile.open(file_dmg + ".xml", std::ofstream::out | std::ifstream::binary);
-	file.seekg(start_offset);
-	 
-	char *buf = new char[size]; 
-	file.read(buf, size);
-	uint64_t dataSize;
-	char* data = read_xml(buf, &dataSize);
-	size_t length;
-	unsigned char* outDecode = decodeBase64(data, &length); //base_decode(data);// 
-	BLKXTable* mishblock = mish_block(outDecode);
-	BLKXRun* entry = (BLKXRun*)mishblock->runs;
-	
-	file.seekg(swapByteOrder(entry->compOffset));
-	char* buf2 = new char[swapByteOrder(entry->compLength)];
-	file.read(buf2, swapByteOrder(entry->compLength));
-	outST* head = start_parse((unsigned char*)buf2, swapByteOrder(entry->compLength));
-
-	std::cout << "++++++++++++++++++++=====================" << std::endl;
-	std::cout << "decompress size: " << head->size << std::endl;
-	//wfile.write(buf, size);
-}*/
 
 void show_kolyblock(UDIFResourceFile* kolyblock) {
 	std::cout <<"Signature: " << kolyblock->Signature << std::endl;
@@ -128,11 +101,6 @@ int koly_block(std::string file_dmg) {
 	//std::cout << "+++++++++++++++++++mish=====================" << std::endl;
 	//outXML(rfile, file_dmg, swapByteOrder(kolyblock->XMLOffset), swapByteOrder(kolyblock->XMLLength));
 }
-
-/*void parse_gpt() {
-	auto gpt_head = start_parse(firstblock, sizeof(firstblock));
-	std::cout << gpt_head->out[gpt_head->size - 1] << std::endl;
-}*/
 
 int main(int argc, char** argv) {
 	koly_block(argv[1]);
