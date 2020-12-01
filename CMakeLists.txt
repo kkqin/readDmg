@@ -8,10 +8,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
-include(cmake/b64.cmake)
+#include(cmake/b64.cmake)
 
 add_subdirectory(src)
-#add_executable(dmgPeek mykolyblock.cc)
-#target_link_libraries(dmgPeek PUBLIC b64)
-#target_include_directories(dmgPeek PUBLIC ./dep/b64.c)
 
