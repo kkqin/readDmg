@@ -341,7 +341,38 @@ int DMG::parse_run(BLKXRun* run, char* buf_, size_t min_size) {
 		} while ( err != Z_STREAM_END );
 	}
 	else if (block_type == BT_ZERO || block_type == BT_IGNORE) {
-		to_read;		
+		memset(tmp, 0, CHUNKSIZE);
+		to_write = out_size;
+		if(min_size < to_write)
+			to_write = min_size;
+
+		while (to_write > 0) {
+			if (to_write > CHUNKSIZE)
+				chunk = CHUNKSIZE;
+			else
+				chunk = to_write;
+
+			memcpy(buf_head, tmp, chunk);
+			to_write -= chunk;
+		}
+	} 
+	else if (block_type == BT_RAW) {
+		to_read = in_size;
+		_file.seekg(in_offs);
+	
+		if(min_size < to_read)
+			to_read = min_size;
+
+		while (to_read > 0) {
+			if (to_read > CHUNKSIZE)
+				chunk = CHUNKSIZE;
+			else
+				chunk = to_read;
+
+			_file.read(reinterpret_cast<char*>(tmp), chunk);
+			memcpy(buf_head, tmp, chunk);
+			to_read -= chunk;
+		}
 	}
 
 	if (tmp != NULL)
