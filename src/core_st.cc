@@ -246,7 +246,7 @@ void parse_xml(std::shared_ptr<PLIST_XML> xml, std::shared_ptr<DMG> dmg) {
 	}
 }
 
-void DMG::read_dmg(uint64_t offset, char* buf, size_t a_len) {
+void DMG::read(uint64_t offset, char* buf, size_t a_len) {
 	if(offset > disk_size || a_len > disk_size)  
 		return;
 
@@ -293,6 +293,9 @@ int DMG::parse_run(BLKXRun* run, char* buf_) {
 	int err;
 	char* toReturn = buf_; // point to start
 	z_stream z;
+	z.zalloc = (alloc_func) 0;
+        z.zfree = (free_func) 0;
+        z.opaque = (voidpf) 0;
 	if(block_type == BT_ZLIB) {
 		err = inflateInit(&z);
 		if (err != Z_OK) {

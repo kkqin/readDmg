@@ -4,9 +4,9 @@
 #include <cassert>
 #include <cstring>
 #include "mykolyblock.h"
-//#include "b64.h"
-//#include "parse_zlib_data.h"
 #include "core_st.h"
+
+static int debug = 0;
 
 BLKXTable* mish_block(unsigned char* mish) {
 	BLKXTable* mishblock = (BLKXTable*)mish;
@@ -32,7 +32,7 @@ BLKXTable* mish_block(unsigned char* mish) {
 	return mishblock;
 }
 
-void process_plist_xml(std::ifstream& file, uint64_t start_offset, uint64_t size) {
+std::shared_ptr<core_::DMG> process_plist_xml(std::ifstream& file, uint64_t start_offset, uint64_t size) {
 
 	file.seekg(start_offset);
 	auto xml = std::make_shared<core_::PLIST_XML>();
@@ -43,6 +43,7 @@ void process_plist_xml(std::ifstream& file, uint64_t start_offset, uint64_t size
 	auto dmg = std::make_shared<core_::DMG>(); 
 	core_::parse_xml(xml, dmg);
 	dmg->_file = std::move(file);
+	return dmg;
 }
 
 void show_kolyblock(UDIFResourceFile* kolyblock) {
@@ -79,12 +80,12 @@ void show_kolyblock(UDIFResourceFile* kolyblock) {
 	std::cout <<"reserved4: " << kolyblock->reserved4 << std::endl;
 }
 
-int koly_block(std::string file_dmg) {
+std::shared_ptr<core_::DMG> koly_block(std::string file_dmg) {
 	std::ifstream rfile;
 	rfile.open(file_dmg, std::ifstream::in | std::ifstream::binary);
 	if(!rfile.is_open()) {
 		std::cout << "error" << std::endl;
-		return -1;
+		return NULL;
 	}
 	rfile.seekg(0, std::ios_base::end);
 	uint64_t filesize = rfile.tellg();
@@ -94,17 +95,20 @@ int koly_block(std::string file_dmg) {
 	
 	UDIFResourceFile* kolyblock = (UDIFResourceFile*)_data;
 
-	assert(!strcmp(kolyblock->Signature, "koly"));
-	std::cout << "+++++++++++++++++++koly=====================" << std::endl;
-	show_kolyblock(kolyblock);
-	process_plist_xml(rfile, swapByteOrder(kolyblock->XMLOffset), swapByteOrder(kolyblock->XMLLength));
-	//std::cout << "+++++++++++++++++++mish=====================" << std::endl;
-	//outXML(rfile, file_dmg, swapByteOrder(kolyblock->XMLOffset), swapByteOrder(kolyblock->XMLLength));
+	ASSERT(!strcmp(kolyblock->Signature, "koly"), "does not contain koly block in the back.");
+	if(debug) {
+		std::cout << "+++++++++++++++++++koly=====================" << std::endl;
+		show_kolyblock(kolyblock);
+	}
+	return process_plist_xml(rfile, swapByteOrder(kolyblock->XMLOffset), swapByteOrder(kolyblock->XMLLength));
 	return 0;
 }
 
 int main(int argc, char** argv) {
-	koly_block(argv[1]);
+	auto dmg = koly_block(argv[1]);
+	char* buf = new char[512];
+	dmg->read(0, buf, 512);
+	std::cout << std::hex << buf[511] << std::endl;
 	return 0;
 }
 

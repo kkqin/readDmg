@@ -18,6 +18,8 @@
 #define BT_TERM 0xffffffff
 
 #define CHUNKSIZE 0x100000
+#define ASSERT(x, m) if(!(x)) { fflush(stdout); fprintf(stderr, "error: %s\n", m); perror("error"); fflush(stderr); exit(1); }
+
 
 inline unsigned long long swapByteOrder(unsigned long long ull)
 {
@@ -70,7 +72,7 @@ typedef struct DMG {
 	std::ifstream _file;
 
 	DMG() : disk_size(0), forward_size(0) {}
-	void read_dmg(uint64_t offset, char* buf, size_t a_len);
+	void read(uint64_t offset, char* buf, size_t a_len);
 	int parse_run(BLKXRun* run, char* buf);
 } DMG;
 
