@@ -261,7 +261,7 @@ void DMG::read(uint64_t offset, char* buf, size_t a_len) {
 		return;
 
 	size_t out_size, tmp_len;
-	char* toReturn = buf;
+	char* step_buf = buf;
 	for(; iter != iter2; iter++) {
 		uint64_t offset = iter->first;
 		BLKXRun* run = iter->second;
@@ -269,21 +269,20 @@ void DMG::read(uint64_t offset, char* buf, size_t a_len) {
 		
 		// parse read
 		char* buf_ = new char[a_len]; 
-		parse_run(run, buf_); // out_size 
-		
+		parse_run(run, buf_, a_len); // out_size 
 		if(out_size <= a_len)
 			tmp_len = out_size;
 		else 
 			tmp_len = a_len;
 
-		memcpy(buf, buf_, tmp_len);
-
+		memcpy(step_buf, buf_, tmp_len); 
 		a_len -= tmp_len;
-		buf += tmp_len;
+		step_buf += tmp_len; 
+		delete buf_;
 	}
 }
 
-int DMG::parse_run(BLKXRun* run, char* buf_) {
+int DMG::parse_run(BLKXRun* run, char* buf_, size_t min_size) {
 	unsigned int block_type = convert_int(run->type);
 	uint64_t in_offs = convert_int64(run->compOffset), 
 		in_size = convert_int64(run->compLength),
@@ -291,11 +290,13 @@ int DMG::parse_run(BLKXRun* run, char* buf_) {
 	
 	uint64_t to_read, chunk, to_write;
 	int err;
-	char* toReturn = buf_; // point to start
+	char* buf_head = buf_; // point to start
 	z_stream z;
 	z.zalloc = (alloc_func) 0;
         z.zfree = (free_func) 0;
         z.opaque = (voidpf) 0;
+	Bytef* otmp = (Bytef *) malloc(CHUNKSIZE);
+	Bytef* tmp = (Bytef *) malloc(CHUNKSIZE);
 	if(block_type == BT_ZLIB) {
 		err = inflateInit(&z);
 		if (err != Z_OK) {
@@ -304,8 +305,6 @@ int DMG::parse_run(BLKXRun* run, char* buf_) {
 		}
 
 		to_read = in_size;
-		Bytef* otmp = (Bytef *) malloc(CHUNKSIZE);
-		Bytef* tmp = (Bytef *) malloc(CHUNKSIZE);
 		do {
 			if (!to_read)
 				break;
@@ -334,8 +333,10 @@ int DMG::parse_run(BLKXRun* run, char* buf_) {
 						return 1;
 				}
 				to_write = CHUNKSIZE - z.avail_out;
-				memcpy(buf_, otmp, to_write);
-				buf_ += to_write;
+				if(min_size < to_write)
+					to_write = min_size;
+				memcpy(buf_head, otmp, to_write);
+				buf_head += to_write;
 			} while( z.avail_out == 0 );
 		} while ( err != Z_STREAM_END );
 	}
@@ -343,7 +344,14 @@ int DMG::parse_run(BLKXRun* run, char* buf_) {
 		to_read;		
 	}
 
-	buf_ = toReturn; // reset to start
+	if (tmp != NULL)
+                free(tmp);
+        if (otmp != NULL)
+                free(otmp);
+
+	buf_head = NULL;
+
+	(void)inflateEnd(&z);
 	return 0;
 }
 

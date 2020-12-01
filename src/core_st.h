@@ -73,7 +73,7 @@ typedef struct DMG {
 
 	DMG() : disk_size(0), forward_size(0) {}
 	void read(uint64_t offset, char* buf, size_t a_len);
-	int parse_run(BLKXRun* run, char* buf);
+	int parse_run(BLKXRun* run, char* buf, size_t min_size);
 } DMG;
 
 typedef struct PLIST_XML {
