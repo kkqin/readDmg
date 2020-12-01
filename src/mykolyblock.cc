@@ -1,12 +1,11 @@
 #include <iostream>
 #include <arpa/inet.h>
 #include <uuid/uuid.h>
-#include <fstream>
 #include <cassert>
 #include <cstring>
 #include "mykolyblock.h"
-#include "b64.h"
-#include "parse_zlib_data.h"
+//#include "b64.h"
+//#include "parse_zlib_data.h"
 #include "core_st.h"
 
 BLKXTable* mish_block(unsigned char* mish) {
@@ -43,6 +42,7 @@ void process_plist_xml(std::ifstream& file, uint64_t start_offset, uint64_t size
 
 	auto dmg = std::make_shared<core_::DMG>(); 
 	core_::parse_xml(xml, dmg);
+	dmg->_file = std::move(file);
 }
 
 void show_kolyblock(UDIFResourceFile* kolyblock) {
@@ -100,6 +100,7 @@ int koly_block(std::string file_dmg) {
 	process_plist_xml(rfile, swapByteOrder(kolyblock->XMLOffset), swapByteOrder(kolyblock->XMLLength));
 	//std::cout << "+++++++++++++++++++mish=====================" << std::endl;
 	//outXML(rfile, file_dmg, swapByteOrder(kolyblock->XMLOffset), swapByteOrder(kolyblock->XMLLength));
+	return 0;
 }
 
 int main(int argc, char** argv) {

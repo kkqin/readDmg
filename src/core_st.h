@@ -4,6 +4,8 @@
 #include <memory>
 #include <cstring>
 #include <map>
+#include <zlib.h>
+#include <fstream>
 
 #define BT_ADC   0x80000004
 #define BT_ZLIB  0x80000005
@@ -15,6 +17,7 @@
 #define BT_COMMENT 0x7ffffffe
 #define BT_TERM 0xffffffff
 
+#define CHUNKSIZE 0x100000
 
 inline unsigned long long swapByteOrder(unsigned long long ull)
 {
@@ -64,9 +67,11 @@ typedef struct DMG {
 	std::map<uint64_t, BLKXRun*> blkx_runs;
 	uint64_t disk_size;
 	uint64_t forward_size;
+	std::ifstream _file;
 
 	DMG() : disk_size(0), forward_size(0) {}
 	void read_dmg(uint64_t offset, char* buf, size_t a_len);
+	int parse_run(BLKXRun* run, char* buf);
 } DMG;
 
 typedef struct PLIST_XML {

@@ -260,20 +260,87 @@ void DMG::read_dmg(uint64_t offset, char* buf, size_t a_len) {
 	if(iter2 == blkx_runs.end())
 		return;
 
-	size_t size;
+	size_t out_size, tmp_len;
+	char* toReturn = buf;
 	for(; iter != iter2; iter++) {
 		uint64_t offset = iter->first;
 		BLKXRun* run = iter->second;
-		size = convert_int64(run->sectorCount) * 512 ;
+		out_size = convert_int64(run->sectorCount) * 512 ;
 		
 		// parse read
+		char* buf_ = new char[a_len]; 
+		parse_run(run, buf_); // out_size 
+		
+		if(out_size <= a_len)
+			tmp_len = out_size;
+		else 
+			tmp_len = a_len;
 
+		memcpy(buf, buf_, tmp_len);
 
-		if(size <= a_len)
-			a_len -= size;
-		else 		
-			a_len = 0;
+		a_len -= tmp_len;
 	}
+}
+
+int DMG::parse_run(BLKXRun* run, char* buf_) {
+	unsigned int block_type = convert_int(run->type);
+	uint64_t in_offs = convert_int64(run->compOffset), 
+		in_size = convert_int64(run->compLength),
+		out_size = convert_int64(run->sectorCount) * 512;
+	
+	uint64_t to_read, chunk, to_write;
+	int err;
+	char* toReturn = buf_; // point to start
+	z_stream z;
+	if(block_type == BT_ZLIB) {
+		err = inflateInit(&z);
+		if (err != Z_OK) {
+			fprintf(stderr, "Can't initialize inflate stream: %d\n", err);
+			return 1;
+		}
+
+		to_read = in_size;
+		Bytef* otmp = (Bytef *) malloc(CHUNKSIZE);
+		Bytef* tmp = (Bytef *) malloc(CHUNKSIZE);
+		do {
+			if (!to_read)
+				break;
+			if (to_read > CHUNKSIZE)
+				chunk = CHUNKSIZE;
+			else
+				chunk = to_read;
+		
+			_file.seekg(in_offs);
+			_file.read(reinterpret_cast<char*>(tmp), chunk);
+			z.avail_in = chunk;
+			to_read -= z.avail_in;
+			z.next_in = tmp;
+			do {
+				z.avail_out = CHUNKSIZE;
+				z.next_out = otmp;
+				err = inflate(&z, Z_NO_FLUSH);
+				assert(err != Z_STREAM_ERROR);  /* state not clobbered */
+				switch (err) {
+					case Z_NEED_DICT:
+						err = Z_DATA_ERROR;     /* and fall through */
+					case Z_DATA_ERROR:
+					case Z_MEM_ERROR:
+						(void)inflateEnd(&z);
+						fprintf(stderr, "Inflation failed\n");
+						return 1;
+				}
+				to_write = CHUNKSIZE - z.avail_out;
+				memcpy(buf_, otmp, to_write);
+				buf_ += to_write;
+			} while( z.avail_out == 0 );
+		} while ( err != Z_STREAM_END );
+	}
+	else if (block_type == BT_ZERO || block_type == BT_IGNORE) {
+		to_read;		
+	}
+
+	buf_ = toReturn; // reset to start
+	return 0;
 }
 
 }
