@@ -279,6 +279,7 @@ void DMG::read_dmg(uint64_t offset, char* buf, size_t a_len) {
 		memcpy(buf, buf_, tmp_len);
 
 		a_len -= tmp_len;
+		buf += tmp_len;
 	}
 }
 
