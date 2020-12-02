@@ -43,6 +43,7 @@ std::shared_ptr<core_::DMG> process_plist_xml(std::ifstream& file, uint64_t star
 	auto dmg = std::make_shared<core_::DMG>(); 
 	core_::parse_xml(xml, dmg);
 	dmg->_file = std::move(file);
+	delete xml->data;
 	return dmg;
 }
 
