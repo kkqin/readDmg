@@ -107,9 +107,13 @@ std::shared_ptr<core_::DMG> koly_block(std::string file_dmg) {
 
 int main(int argc, char** argv) {
 	auto dmg = koly_block(argv[1]);
-	unsigned block_size = 1030;
+	unsigned block_size = 4;
+	//uint64_t offset = 209735680;
+	//uint64_t offset = 482099200;
+	uint64_t offset = 3776959008;
+	//uint64_t offset = 1224;
 	char* buf = new char[block_size];
-	dmg->read(0, buf, block_size);
+	dmg->read(offset, buf, block_size);
 	std::cout << std::hex << buf[block_size - 1] << std::endl;
 	return 0;
 }

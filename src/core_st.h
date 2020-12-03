@@ -78,7 +78,7 @@ typedef struct DMG {
 
 typedef struct PLIST_XML {
 	char* data; 
-	uint32_t size;
+	uint64_t size;
 } PLIST_XML;
 
 void parse_xml(std::shared_ptr<PLIST_XML> xml, std::shared_ptr<DMG> dmg);	

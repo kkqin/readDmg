@@ -250,35 +250,34 @@ void DMG::read(uint64_t offset, char* buf, size_t a_len) {
 	if(offset > disk_size || a_len > disk_size)  
 		return;
 
-	auto iter = blkx_runs.lower_bound(offset);
+	auto iter = blkx_runs.upper_bound(offset);
 	if(iter == blkx_runs.end())
 		return;
+	--iter;
 
-	uint64_t start_offset = iter->first; 
-	uint64_t end_offset = start_offset + a_len;
-	auto iter2 = blkx_runs.lower_bound(end_offset);
-	if(iter2 == blkx_runs.end())
-		return;
+	uint64_t start_offset = iter->first;
+	uint64_t diff_byte = offset - start_offset;
 
 	size_t out_size, tmp_len;
 	char* step_buf = buf;
-	for(; iter != iter2; iter++) {
+	for(; a_len; iter++) {
 		uint64_t offset = iter->first;
 		BLKXRun* run = iter->second;
 		out_size = convert_int64(run->sectorCount) * 512 ;
 		
 		// parse read
-		char* buf_ = new char[a_len]; 
-		parse_run(run, buf_, a_len); // out_size 
+		char* inside_buf = new char[out_size]; 
+		parse_run(run, inside_buf, out_size); // out_size 
 		if(out_size <= a_len)
 			tmp_len = out_size;
 		else 
 			tmp_len = a_len;
 
-		memcpy(step_buf, buf_, tmp_len); 
+		memcpy(step_buf, inside_buf + diff_byte, tmp_len); 
 		a_len -= tmp_len;
 		step_buf += tmp_len; 
-		delete buf_;
+		diff_byte = 0;
+		delete inside_buf;
 	}
 }
 
@@ -353,6 +352,7 @@ int DMG::parse_run(BLKXRun* run, char* buf_, size_t min_size) {
 				chunk = to_write;
 
 			memcpy(buf_head, tmp, chunk);
+			buf_head += chunk;
 			to_write -= chunk;
 		}
 	} 
@@ -371,6 +371,7 @@ int DMG::parse_run(BLKXRun* run, char* buf_, size_t min_size) {
 
 			_file.read(reinterpret_cast<char*>(tmp), chunk);
 			memcpy(buf_head, tmp, chunk);
+			buf_head += chunk;
 			to_read -= chunk;
 		}
 	}
