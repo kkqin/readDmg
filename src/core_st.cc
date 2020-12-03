@@ -257,7 +257,6 @@ void DMG::read(uint64_t offset, char* buf, size_t a_len) {
 	uint64_t diff_byte = offset - start_offset;
 
 	size_t out_size, tmp_len;
-	char* step_buf = buf;
 	for(; a_len; iter++) {
 		uint64_t offset = iter->first;
 		BLKXRun* run = iter->second;
@@ -271,9 +270,9 @@ void DMG::read(uint64_t offset, char* buf, size_t a_len) {
 		else 
 			tmp_len = a_len;
 
-		memcpy(step_buf, inside_buf + diff_byte, tmp_len); 
+		memcpy(buf, inside_buf + diff_byte, tmp_len); 
 		a_len -= tmp_len;
-		step_buf += tmp_len; 
+		buf += tmp_len; 
 		diff_byte = 0;
 		delete inside_buf;
 	}
@@ -287,7 +286,7 @@ int DMG::parse_run(BLKXRun* run, char* buf_, size_t min_size) {
 	
 	uint64_t to_read, chunk, to_write;
 	int err;
-	char* buf_head = buf_; // point to start
+	//char* buf_head = buf_; // point to start
 	z_stream z;
 	z.zalloc = (alloc_func) 0;
         z.zfree = (free_func) 0;
@@ -332,8 +331,8 @@ int DMG::parse_run(BLKXRun* run, char* buf_, size_t min_size) {
 				to_write = CHUNKSIZE - z.avail_out;
 				if(min_size < to_write)
 					to_write = min_size;
-				memcpy(buf_head, otmp, to_write);
-				buf_head += to_write;
+				memcpy(buf_, otmp, to_write);
+				buf_ += to_write;
 			} while( z.avail_out == 0 );
 		} while ( err != Z_STREAM_END );
 	}
@@ -349,8 +348,8 @@ int DMG::parse_run(BLKXRun* run, char* buf_, size_t min_size) {
 			else
 				chunk = to_write;
 
-			memcpy(buf_head, tmp, chunk);
-			buf_head += chunk;
+			memcpy(buf_, tmp, chunk);
+			buf_ += chunk;
 			to_write -= chunk;
 		}
 	} 
@@ -368,8 +367,8 @@ int DMG::parse_run(BLKXRun* run, char* buf_, size_t min_size) {
 				chunk = to_read;
 
 			_file.read(reinterpret_cast<char*>(tmp), chunk);
-			memcpy(buf_head, tmp, chunk);
-			buf_head += chunk;
+			memcpy(buf_, tmp, chunk);
+			buf_ += chunk;
 			to_read -= chunk;
 		}
 	}
@@ -379,7 +378,7 @@ int DMG::parse_run(BLKXRun* run, char* buf_, size_t min_size) {
         if (otmp != NULL)
                 free(otmp);
 
-	buf_head = NULL;
+	//buf_head = NULL;
 
 	(void)inflateEnd(&z);
 	return 0;
