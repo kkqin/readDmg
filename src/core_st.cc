@@ -251,8 +251,6 @@ void DMG::read(uint64_t offset, char* buf, size_t a_len) {
 		return;
 
 	auto iter = blkx_runs.upper_bound(offset);
-	if(iter == blkx_runs.end())
-		return;
 	--iter;
 
 	uint64_t start_offset = iter->first;
