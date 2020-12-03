@@ -12,7 +12,7 @@ typedef struct {
         uint64_t RsrcForkLength;        // Resource fork length, if any
         uint32_t SegmentNumber;         // Usually 1, may be 0
         uint32_t SegmentCount;          // Usually 1, may be 0
-        uuid_t   SegmentID;             // 128-bit GUID identifier of segment (if SegmentNumber !=0)
+        unsigned char SegmentID[16];             // 128-bit GUID identifier of segment (if SegmentNumber !=0)
 
 	uint32_t DataChecksumType;      // Data fork 
         uint32_t DataChecksumSize;      //  Checksum Information

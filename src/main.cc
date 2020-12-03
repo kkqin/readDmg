@@ -3,10 +3,7 @@
 #include <uuid/uuid.h>
 #include <cassert>
 #include <cstring>
-#include "mykolyblock.h"
 #include "core_st.h"
-
-static int debug = 0;
 
 BLKXTable* mish_block(unsigned char* mish) {
 	BLKXTable* mishblock = (BLKXTable*)mish;
@@ -32,20 +29,6 @@ BLKXTable* mish_block(unsigned char* mish) {
 	return mishblock;
 }
 
-std::shared_ptr<core_::DMG> process_plist_xml(std::ifstream& file, uint64_t start_offset, uint64_t size) {
-
-	file.seekg(start_offset);
-	auto xml = std::make_shared<core_::PLIST_XML>();
-	xml->data = new char[size];
-	xml->size = size;
-	file.read(xml->data, size);
-
-	auto dmg = std::make_shared<core_::DMG>(); 
-	core_::parse_xml(xml, dmg);
-	dmg->_file = std::move(file);
-	delete xml->data;
-	return dmg;
-}
 
 void show_kolyblock(UDIFResourceFile* kolyblock) {
 	std::cout <<"Signature: " << kolyblock->Signature << std::endl;
@@ -81,32 +64,9 @@ void show_kolyblock(UDIFResourceFile* kolyblock) {
 	std::cout <<"reserved4: " << kolyblock->reserved4 << std::endl;
 }
 
-std::shared_ptr<core_::DMG> koly_block(std::string file_dmg) {
-	std::ifstream rfile;
-	rfile.open(file_dmg, std::ifstream::in | std::ifstream::binary);
-	if(!rfile.is_open()) {
-		std::cout << "error" << std::endl;
-		return NULL;
-	}
-	rfile.seekg(0, std::ios_base::end);
-	uint64_t filesize = rfile.tellg();
-	rfile.seekg(filesize - sizeof(UDIFResourceFile));
-	char *_data = new char[sizeof(UDIFResourceFile)];
-	rfile.read(_data, sizeof(UDIFResourceFile));
-	
-	UDIFResourceFile* kolyblock = (UDIFResourceFile*)_data;
-
-	ASSERT(!strcmp(kolyblock->Signature, "koly"), "does not contain koly block in the back.");
-	if(debug) {
-		std::cout << "+++++++++++++++++++koly=====================" << std::endl;
-		show_kolyblock(kolyblock);
-	}
-	return process_plist_xml(rfile, swapByteOrder(kolyblock->XMLOffset), swapByteOrder(kolyblock->XMLLength));
-	return 0;
-}
 
 int main(int argc, char** argv) {
-	auto dmg = koly_block(argv[1]);
+	auto dmg = core_::koly_block(argv[1]);
 	unsigned block_size = 4;
 	//uint64_t offset = 209735680;
 	//uint64_t offset = 482099200;

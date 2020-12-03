@@ -1,5 +1,6 @@
 #pragma once
 #include "mymishblock.h"
+#include "mykolyblock.h"
 #include <vector>
 #include <memory>
 #include <cstring>
@@ -20,6 +21,7 @@
 #define CHUNKSIZE 0x100000
 #define ASSERT(x, m) if(!(x)) { fflush(stdout); fprintf(stderr, "error: %s\n", m); perror("error"); fflush(stderr); exit(1); }
 
+static int debug = 0;
 
 inline unsigned long long swapByteOrder(unsigned long long ull)
 {
@@ -82,6 +84,10 @@ typedef struct PLIST_XML {
 } PLIST_XML;
 
 void parse_xml(std::shared_ptr<PLIST_XML> xml, std::shared_ptr<DMG> dmg);	
+
+std::shared_ptr<DMG> process_plist_xml(std::ifstream& file, uint64_t start_offset, uint64_t size);
+
+std::shared_ptr<DMG> koly_block(std::string file_dmg);
 
 }
 

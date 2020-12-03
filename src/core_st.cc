@@ -385,4 +385,38 @@ int DMG::parse_run(BLKXRun* run, char* buf_, size_t min_size) {
 	return 0;
 }
 
+std::shared_ptr<DMG> process_plist_xml(std::ifstream& file, uint64_t start_offset, uint64_t size) {
+
+	file.seekg(start_offset);
+	auto xml = std::make_shared<PLIST_XML>();
+	xml->data = new char[size];
+	xml->size = size;
+	file.read(xml->data, size);
+
+	auto dmg = std::make_shared<DMG>(); 
+	parse_xml(xml, dmg);
+	dmg->_file = std::move(file);
+	delete xml->data;
+	return dmg;
+}
+
+std::shared_ptr<DMG> koly_block(std::string file_dmg) {
+	std::ifstream rfile;
+	rfile.open(file_dmg, std::ifstream::in | std::ifstream::binary);
+	if(!rfile.is_open()) {
+		std::cout << "error" << std::endl;
+		return NULL;
+	}
+	rfile.seekg(0, std::ios_base::end);
+	uint64_t filesize = rfile.tellg();
+	rfile.seekg(filesize - sizeof(UDIFResourceFile));
+	char *_data = new char[sizeof(UDIFResourceFile)];
+	rfile.read(_data, sizeof(UDIFResourceFile));
+	
+	UDIFResourceFile* kolyblock = (UDIFResourceFile*)_data;
+
+	ASSERT(!strcmp(kolyblock->Signature, "koly"), "does not contain koly block in the back.");
+	return process_plist_xml(rfile, swapByteOrder(kolyblock->XMLOffset), swapByteOrder(kolyblock->XMLLength));
+	return 0;
+}
 }
