@@ -270,12 +270,10 @@ void DMG::read(uint64_t offset, char* buf, size_t a_len) {
 			tmp_len = out_size;
 			tmp_len -= diff_byte;
 		}
-		else {
-			if( (out_size - diff_byte) < a_len )  
-				tmp_len = out_size - diff_byte;
-			else
-				tmp_len = a_len;
-		}
+		else if( (out_size - diff_byte) < a_len )  
+			tmp_len = out_size - diff_byte;
+		else
+			tmp_len = a_len;
 
 		memcpy(buf, inside_buf + diff_byte, tmp_len); 
 		a_len -= tmp_len;
