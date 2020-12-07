@@ -9,8 +9,7 @@ static void trim_space(char** location) {
 	for(;strncmp(*location, "<", 1); (*location)++);
 }
 
-static char ascii_to_base(char str) 
-{
+static char ascii_to_base(char str) {
 	if (str >= 65 && str <= 90) {
 		return str - 65;
 	} else if (str >= 97 && str <= 122) {
@@ -115,8 +114,7 @@ unsigned char* decodeBase64(char* toDecode, size_t* dataLength) {
 	return decodeBuffer;
 }
 
-void fill_mishblk(unsigned char* c, BLKXTable* m)
-{
+void fill_mishblk(unsigned char* c, BLKXTable* m) {
         memset(m, 0, sizeof(BLKXTable));
         memcpy(m, c, 0xCC);
 
